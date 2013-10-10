@@ -12,6 +12,13 @@ get_get_repo(){
         popd
     fi
     repo_basename=${1#*/}
+    REF_VAR=TOCI_REPOREF_${repo_basename//-/_}
+    REF=${!REF_VAR}
+    if [ -n "$REF" ]; then
+        pushd $CACHEDIR
+            git reset --hard $REF
+        popd
+    fi
     apply_patches ${repo_basename} ${repo_basename}*
 }
 
