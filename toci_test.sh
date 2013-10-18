@@ -126,7 +126,7 @@ if [ -n "$TOCI_MACS" ]; then
 
   # For the undercloud we pop off the first MAC and power management settings
   # since they have already been used by the seed VM
-  setup-baremetal $TOCI_NODE_CPU $TOCI_NODE_MEM $TOCI_NODE_DISK $TOCI_DIB_ARCH "${TOCI_MACS#[^ ]* }" undercloud "${TOCI_PM_IPS#[^ ]* }" "${TOCI_PM_USERS#[^ ]* }" "${TOCI_PM_PASSWORDS#[^ ]* }"
+  setup-baremetal $TOCI_NODE_CPU $TOCI_NODE_MEM $TOCI_NODE_DISK $TOCI_DIB_ARCH "${TOCI_MACS#[^ ]* }" ubuntu "${TOCI_PM_IPS#[^ ]* }" "${TOCI_PM_USERS#[^ ]* }" "${TOCI_PM_PASSWORDS#[^ ]* }"
 
 else
 

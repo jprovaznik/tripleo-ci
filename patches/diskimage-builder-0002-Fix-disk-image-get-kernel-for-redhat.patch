@@ -1,0 +1,50 @@
+From 17f73a9ce8f86324a975f915f96773cd4a288b51 Mon Sep 17 00:00:00 2001
+From: Lucas Alvares Gomes <lucasagomes@gmail.com>
+Date: Thu, 17 Oct 2013 10:12:01 +0100
+Subject: [PATCH 2/3] Fix disk-image-get-kernel for redhat
+
+disk-image-get-kernel picks the wrong version of kernel and initramfs
+if there's a PAE and non-PAE version present. Only affects i386 images.
+
+Change-Id: I06e08fdf038988759b620f549261499cb0a69b34
+Closes-Bug: #1240873
+(cherry picked from commit 0210be22aebffc715103767922b431953f3693e1)
+---
+ bin/disk-image-get-kernel | 21 +++++++++++++++++++--
+ 1 file changed, 19 insertions(+), 2 deletions(-)
+
+diff --git a/bin/disk-image-get-kernel b/bin/disk-image-get-kernel
+index ac631ee..f75bc51 100755
+--- a/bin/disk-image-get-kernel
++++ b/bin/disk-image-get-kernel
+@@ -85,8 +85,25 @@ BOOTDIR="$WORK_DIR/boot"
+ KERNEL=
+ RAMDISK=
+ if [ -f $WORK_DIR/etc/redhat-release ]; then
+-    KERNEL=$(basename `ls -1rv $BOOTDIR/vmlinuz* | head -1`)
+-    RAMDISK=$(basename `ls -1rv $BOOTDIR/initramfs* | head -1`)
++
++    # Prioritize PAE if present
++    KERNEL=$(basename `ls -1rv $BOOTDIR/vmlinuz*  | grep PAE | grep -v debug | head -1`)
++    if [ ! $KERNEL ]; then
++        KERNEL=$(basename `ls -1rv $BOOTDIR/vmlinuz* | grep -v debug | head -1`)
++        if [ ! $KERNEL ]; then
++            echo "No suitable kernel found."
++            exit 1
++        fi
++    fi
++
++    KERNEL_VERSION=`echo $KERNEL | sed 's/vmlinuz-//g'`
++
++    RAMDISK=$(basename `ls $BOOTDIR/initramfs-$KERNEL_VERSION.img`)
++    if [ ! $RAMDISK ]; then
++        echo "Can't find an initramfs for the $KERNEL_VERSION version of the kernel."
++        exit 1
++    fi
++
+ elif [ -f $WORK_DIR/etc/debian_version ]; then
+     KERNEL=$(basename `ls -1rv $BOOTDIR/vmlinuz*generic | head -1`)
+     RAMDISK=$(basename `ls -1rv $BOOTDIR/initrd*generic | head -1`)
+-- 
+1.8.3.1
+

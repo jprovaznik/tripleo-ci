@@ -59,3 +59,53 @@ export TOCI_ADMIN_TOKEN='admin'
 export UNDERCLOUD_ADMIN_PASSWORD='stack'
 export OVERCLOUD_ADMIN_PASSWORD='stack'
 export OVERCLOUD_DEMO_PASSWORD='stack'
+
+# don't care what we use here, since we shouldn't be using this feature in undercloud-live
+export TOCI_REPOREF_bm_poseur=13c6574
+# havana rc1
+export TOCI_REPOREF_cinder=f021629
+# same as above, which matches v0.1.2
+export TOCI_REPOREF_config_applier=5a0470f
+# don't care what we use here, since we shouldn't be using this feature in undercloud-live
+export TOCI_REPOREF_devstack=b48e008
+# v0.0.4
+export TOCI_REPOREF_diskimage_builder=9211a7fecbadc13e8254085133df1e3b53f150d8
+# havana rc1
+export TOCI_REPOREF_glance=04cd202
+# havana rc1
+export TOCI_REPOREF_heat=605eb36
+# don't care what we use here, since we shouldn't be using this feature in undercloud-live
+# note: this is not tripleo-incubator which is set below
+export TOCI_REPOREF_incubator=5c72571
+# havana rc1
+export TOCI_REPOREF_keystone=b6b1e30
+# havana rc1
+export TOCI_REPOREF_neutron=d90649f
+# havana rc1
+export TOCI_REPOREF_nova=96d828f
+# don't care what we use here, since we shouldn't be using this feature in undercloud-live
+export TOCI_REPOREF_novnc=3cb89f5
+# v0.1.2
+export TOCI_REPOREF_os_collect_config=ff45223
+# same as above, which matches v0.0.2
+export TOCI_REPOREF_os_refresh_config=8386314
+# v0.10.0
+export TOCI_REPOREF_python_glanceclient=eb47b55
+# v0.2.4
+export TOCI_REPOREF_python_heatclient=2c05c73
+# v0.3.2
+export TOCI_REPOREF_python_keystoneclient=6441f2b
+# v2.3.0
+export TOCI_REPOREF_python_neutronclient=b1f348a
+# v2.15.0
+export TOCI_REPOREF_python_novaclient=45fcd6f
+# from https://github.com/agroup/undercloud-live/blob/master/bin/install.sh#58
+export TOCI_REPOREF_tripleo_heat_templates=0dbf2810a0ee78658c35e61dc447c5f968226cb9
+# from 2013-09-30  (just after v0.0.2)
+export TOCI_REPOREF_tripleo_image_elements=6e4ae3944bece239e25d7c8f8fe3494f145961d0
+# from https://github.com/agroup/undercloud-live/blob/master/bin/install.sh#L40
+export TOCI_REPOREF_tripleo_incubator=8031466
+
+#export CUSTOM_RELEASE=1
+#export DIB_OFFLINE=1
+#export EXTRA_ELEMENTS="local-pypi"

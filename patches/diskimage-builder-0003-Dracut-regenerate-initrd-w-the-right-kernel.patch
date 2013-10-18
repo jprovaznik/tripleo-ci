@@ -1,0 +1,41 @@
+From 149b1e46a5ad2cce59dad666c455c1b23a89c664 Mon Sep 17 00:00:00 2001
+From: Lucas Alvares Gomes <lucasagomes@gmail.com>
+Date: Thu, 17 Oct 2013 12:11:30 +0100
+Subject: [PATCH 3/3] Dracut regenerate initrd w/ the right kernel
+
+When picking the latest version of the kernel on i386 we should prioritize
+PAE kernels. Debug kernels will be ignored.
+
+Change-Id: Ic0fc5907074ee2a5ddfbbb1db2f1c8a6060cae9f
+Related-Bug: #1240873
+(cherry picked from commit f707a6bd82edfaecd914bb965f67110864901e92)
+---
+ .../dracut-network/finalise.d/98-regenerate-initramfs     | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/elements/dracut-network/finalise.d/98-regenerate-initramfs b/elements/dracut-network/finalise.d/98-regenerate-initramfs
+index db38137..df0dd55 100755
+--- a/elements/dracut-network/finalise.d/98-regenerate-initramfs
++++ b/elements/dracut-network/finalise.d/98-regenerate-initramfs
+@@ -1,6 +1,15 @@
+ #!/bin/bash
+ 
+-LAST_VERSION=$(basename `ls -1 /boot/vmlinuz*  | tail -1 | sed 's/vmlinuz-//g'`)
+-INITRAMFS=`ls /boot/initramfs-$LAST_VERSION.img`
++# Prioritize PAE if present
++KERNEL=$(basename `ls -1rv /boot/vmlinuz*  | grep PAE | grep -v debug | head -1`)
++if [ ! $KERNEL ]; then
++    KERNEL=$(basename `ls -1rv /boot/vmlinuz* | grep -v debug | head -1`)
++    if [ ! $KERNEL ]; then
++        echo "No suitable kernel found."
++        exit 1
++    fi
++fi
++KERNEL_VERSION=`echo $KERNEL | sed 's/vmlinuz-//g'`
++RAMDISK=/boot/initramfs-$KERNEL_VERSION.img
+ 
+-dracut --force --add "network" $INITRAMFS $LAST_VERSION
++dracut --force --add "network" $RAMDISK $KERNEL_VERSION
+-- 
+1.8.3.1
+
