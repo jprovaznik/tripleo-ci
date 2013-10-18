@@ -14,6 +14,9 @@ for repo in 'openstack/tripleo-incubator' 'openstack/diskimage-builder' 'opensta
     fi
 done
 
+# FIXME:
+chmod 755 /opt/toci/diskimage-builder/elements/local-pypi/extra-data.d/99-build-local-pip-repo
+
 # Get a local copy of each of the git repositories  referenced in
 REGEX="^([^ ]+) ([^ ]+) ([/~][^ ]+) ([^ ]+) ?([^ ]*)$"
 for sr in $TOCI_WORKING_DIR/*/elements/*/source-repository* ; do

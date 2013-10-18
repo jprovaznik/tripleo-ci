@@ -1,0 +1,161 @@
+From e2cf70d1ca62698626c2ec4c8fb9e748f5308f3a Mon Sep 17 00:00:00 2001
+From: root <root@virtblade15.virt.bos.redhat.com>
+Date: Wed, 16 Oct 2013 04:41:12 -0400
+Subject: [PATCH] Local-pypi element
+
+---
+ elements/local-pypi/README.md                      |  1 +
+ elements/local-pypi/element-deps                   |  2 +
+ .../extra-data.d/99-build-local-pip-repo           | 66 ++++++++++++++++++++++
+ .../pypi/pre-install.d/00-configure-pypi-mirror    |  7 +++
+ .../extra-data.d/98-source-repositories            | 10 +++-
+ 5 files changed, 83 insertions(+), 3 deletions(-)
+ create mode 100644 elements/local-pypi/README.md
+ create mode 100644 elements/local-pypi/element-deps
+ create mode 100644 elements/local-pypi/extra-data.d/99-build-local-pip-repo
+
+diff --git a/elements/local-pypi/README.md b/elements/local-pypi/README.md
+new file mode 100644
+index 0000000..9d6cf4b
+--- /dev/null
++++ b/elements/local-pypi/README.md
+@@ -0,0 +1 @@
++FIXME
+diff --git a/elements/local-pypi/element-deps b/elements/local-pypi/element-deps
+new file mode 100644
+index 0000000..226af09
+--- /dev/null
++++ b/elements/local-pypi/element-deps
+@@ -0,0 +1,2 @@
++source-repositories
++pypi
+diff --git a/elements/local-pypi/extra-data.d/99-build-local-pip-repo b/elements/local-pypi/extra-data.d/99-build-local-pip-repo
+new file mode 100644
+index 0000000..761485d
+--- /dev/null
++++ b/elements/local-pypi/extra-data.d/99-build-local-pip-repo
+@@ -0,0 +1,66 @@
++#!/bin/bash
++
++set -eux
++
++# Builds local pip package repository which can then be used
++# by pypi element for installing python packages
++# the goal is to make sure that any openstack component in
++# /opt/stack/venvs will use same version of package which was
++# set in source-repository files.
++function build_package(){
++    REPO_PATH=$1
++    pushd $REPO_PATH
++    [ -f setup.py ] || return 0
++    python setup.py sdist
++    local INFO_FILE=`ls *.egg-info/PKG-INFO`
++    cp -f dist/*gz $LOCAL_PKGS_DIR
++    local NAME=`grep '^Name:' $INFO_FILE|head -1|awk '{ print $2 }'`
++    local VER=`grep '^Version' $INFO_FILE|head -1|awk '{ print $2 }'`
++    echo "$NAME==$VER" >> $LOCAL_PIP_DIR/requirements.txt
++    popd
++}
++
++function create_mirror(){
++    PKG_DIR=$1
++    MIRROR_DIR=$2
++    [ -d $MIRROR_DIR ] || mkdir -p $MIRROR_DIR
++
++    cat > $PKG_DIR/mirror.yaml <<EOF
++cache-root: $PKG_DIR
++
++mirrors:
++ - name: openstack
++   projects: []
++   output: $MIRROR_DIR
++EOF
++
++    # FIXME: run-mirror expects pkgs in pip/openstack subdir
++    mkdir -p $PKG_DIR/pip
++    [ -e $PKG_DIR/pip/openstack ] || ln -s $PKG_DIR $PKG_DIR/pip/openstack
++
++    run-mirror -b remotes/origin/master --verbose -c $PKG_DIR/mirror.yaml --no-download
++}
++
++REPO_DIR=~/.cache/image-create/repository-sources/
++LOCAL_PIP_DIR=~/.cache/image-create/pip-repo
++DOWNLOAD_CACHE_DIR=$LOCAL_PIP_DIR/pkgcache
++LOCAL_PKGS_DIR=$LOCAL_PIP_DIR/localpkgs
++PIP_MIRROR_DIR=~/.cache/image-create/pypi/mirror/
++
++mkdir -p $LOCAL_PIP_DIR
++mkdir -p $DOWNLOAD_CACHE_DIR
++mkdir -p $LOCAL_PKGS_DIR
++mkdir -p $PIP_MIRROR_DIR
++> $LOCAL_PIP_DIR/requirements.txt
++
++for REPO in `cat $REPO_DIR/list`; do
++    [ -n "$REPO" -a -d "$REPO" ] && build_package $REPO
++done
++
++create_mirror $LOCAL_PKGS_DIR $LOCAL_PKGS_DIR/mirror
++# fetch all dependencies for custom package builds
++pip install -I -d $DOWNLOAD_CACHE_DIR --extra-index-url="file://$LOCAL_PKGS_DIR/mirror" -r $LOCAL_PIP_DIR/requirements.txt
++# FIXME: some deps are missing:
++pip install -I -d $DOWNLOAD_CACHE_DIR setuptools argparse qpid-python MySQL-python pip pbr distribute virtualenv os-apply-config
++
++create_mirror $DOWNLOAD_CACHE_DIR $PIP_MIRROR_DIR
+diff --git a/elements/pypi/pre-install.d/00-configure-pypi-mirror b/elements/pypi/pre-install.d/00-configure-pypi-mirror
+index 402951c..16286fd 100755
+--- a/elements/pypi/pre-install.d/00-configure-pypi-mirror
++++ b/elements/pypi/pre-install.d/00-configure-pypi-mirror
+@@ -19,10 +19,17 @@ else
+     ONLINE=""
+ fi
+ 
++if [ -z $CUSTOM_RELEASE ]; then
++    PRE_RELEASE=""
++else
++    PRE_RELEASE="pre = 1"
++fi
++
+ cat <<EOF > ~/.pip/pip.conf
+ [global]
+ index-url = $PYPIURL
+ $ONLINE
++$PRE_RELEASE
+ log = $HOME/pip.log
+ EOF
+ 
+diff --git a/elements/source-repositories/extra-data.d/98-source-repositories b/elements/source-repositories/extra-data.d/98-source-repositories
+index 75b372f..844fdaf 100755
+--- a/elements/source-repositories/extra-data.d/98-source-repositories
++++ b/elements/source-repositories/extra-data.d/98-source-repositories
+@@ -57,13 +57,15 @@ function get_repos_for_element(){
+                         git --git-dir=$CACHE_PATH/.git fetch
+                         git --git-dir=$CACHE_PATH/.git --work-tree=$CACHE_PATH reset --hard origin/master
+                     fi
+-                    sudo git clone $CACHE_PATH $REPO_DIRECTORY
++                    REPO_PATH=$CACHE_PATH
+                 else
+-                    sudo git clone $REPOLOCATION $REPO_DIRECTORY
++                    REPO_PATH=$REPOLOCATION
+                 fi
++                sudo git clone $REPO_PATH $REPO_DIRECTORY
+                 pushd $REPO_DIRECTORY
+                 sudo git reset --hard $REPOREF
+                 popd
++                echo "$REPO_PATH" >> $REPO_DIR/list
+                 ;;
+             tar)
+                 # The top level directory of the tarball mightn't have a fixed name i.e.
+@@ -98,7 +100,9 @@ function get_repos_for_element(){
+     done < $REPO_SOURCES
+ }
+ 
+-mkdir -p ~/.cache/image-create/repository-sources/
++REPO_DIR=~/.cache/image-create/repository-sources/
++mkdir -p $REPO_DIR
++> $REPO_DIR/list
+ 
+ # Get source repositories for the target
+ for _SOURCEREPO in $(find $TMP_HOOKS_PATH -maxdepth 1 -name "source-repository-*" -not -name '*~'); do
+-- 
+1.8.3.1
+
